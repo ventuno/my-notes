@@ -1219,8 +1219,6 @@ JSON.stringify(addm(3, 4)) // {"value": 7, "source": "(3+4)"}
 ```
 
 ```
-
-```
 function liftm(binary, op) {
     return function (a, b) {
         if (typeof a === 'number') {

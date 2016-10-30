@@ -1099,7 +1099,7 @@ function fibonaccif(a, b) {
 }
 ```
 
-### Problem 22
+### Problem 23
 Write a `counter` function that returns an object containing two functions that implement an up/down counter, hiding the counter.
 
 ```
@@ -1127,7 +1127,7 @@ function counter(value) {
 }
 ```
 
-### Problem 23
+### Problem 24
 Make a `revocable` function that takes a binary function and returns an object containing an `invoke` function that can invoke the binary binary function and a `revoke` function that disables the `invoke` function.
 
 ```
@@ -1153,7 +1153,7 @@ function revocable(binary) {
 }
 ```
 
-### Problem 24
+### Problem 25
 Write a function `m` that takes a value and an optional source string and returns them in an object.
 
 ```
@@ -1172,7 +1172,7 @@ function m(value, source) {
 }
 ```
 
-### Problem 25
+### Problem 26
 Write a function `addm` that takes two `m` objects and return an `m` object.
 
 ```
@@ -1189,7 +1189,7 @@ function addm(a, b) {
 }
 ```
 
-### Problem 26
+### Problem 27
 Write a function `liftm` that takes a binary function and a string and returns a function that acts on m objects.
 
 ```
@@ -1210,7 +1210,7 @@ function liftm(binary, op) {
 }
 ```
 
-### Problem 27
+### Problem 28
 Modify function `liftm` so that the functions it produces can accept arguments that are either numebers or m objects.
 
 ```
@@ -1235,7 +1235,7 @@ function liftm(binary, op) {
 }
 ```
 
-### Problem 28
+### Problem 29
 Write a function `exp` that evaluates simple array expressions.
 
 ```
@@ -1252,7 +1252,7 @@ function exp(value) {
 }
 ```
 
-### Problem 29
+### Problem 30
 Modify `exp` to evaluate nested array expressions.
 
 ```
@@ -1275,7 +1275,7 @@ function exp(sae) {
 }
 ```
 
-### Problem 30
+### Problem 31
 Write a function `addg` that adds from many invocations that adds from many invocations, until it sees an empty invocation.
 
 ```
@@ -1302,7 +1302,7 @@ function addg(first) {
 }
 ```
 
-### Problem 31
+### Problem 32
 Write a function `liftg` that will take a binary funtion and apply it to many invocations.
 
 ```
@@ -1329,7 +1329,7 @@ function liftg(binary) {
 }
 ```
 
-### Problem 32
+### Problem 33
 Write a function `arrayg` that will build an array from many invocations.
 
 ```
@@ -1365,7 +1365,7 @@ function arrayg(first) {
 }
 ```
 
-### Problem 33
+### Problem 34
 Make a function `continuize` that takes a unary function and returns a function that takes a callback and an argument.
 
 ```
@@ -1389,7 +1389,7 @@ function continuize(any) {
 
 ```
 
-### Problem 34
+### Problem 35
 Make an array `wrapper` object with methods `get`, `store` and `append`, such that an attacker cannot get access to the private array.
 
 ```
@@ -1444,7 +1444,7 @@ function vector() {
 }
 ```
 
-### Problem 35
+### Problem 36
 Make a function that makes a publish/subscribe object. It will reliably deliver all publications to all subscribers in the right order.
 
 ```

@@ -339,15 +339,30 @@ Module pattern is easily transformed into a powerful constructor pattern.
 function constructor(spec) {
     // Step 1
     var that = otherMaker(spec),
-    // Step 2
-    member, // This is a private variable
-    // Step 3
-    method = function () {
-        // access to spec, member, method without using "this"
-    };
+        // Step 2
+        member, // This is a private variable
+        // Step 3
+        method = function () {
+            // access to spec, member, method without using "this"
+        };
     that.method = method; // A public method
     // Step 4
     return that;
+}
+
+// ES6 version
+function constructor(spec) {
+    // Curly braces indicate that member = spec.member.
+    let {member} = spec;
+    const {other} = other_constructor(spec);
+    const method = function () {
+        // spec, member, other, method
+    };
+    return Object.freeze({
+        // Shorthand for "method: method" and "other: other".
+        method,
+        other
+    });
 }
 ```
 
@@ -967,3 +982,518 @@ function concat(...gens) {
 ```
 
 ### Problem 20
+Make a function `gensymf` that makes a function that generates unique symbols.
+
+```
+var geng = gensymf("G"),
+    genh = gensymf("H");
+geng() // "G1"
+genh() // "H1"
+geng() // "G2"
+genh() // "H2"
+```
+
+```
+function gensymf(prefix) {
+    var number = 0;
+    return function () {
+        number += 1;
+        return prefix + number;
+    };
+}
+```
+
+### Problem 21
+Write a function `gensymff` that takes a unary function and a seed an returns a `gensymf`.
+
+```
+var gensymf = gensymff(inc, 0),
+    geng = gensymf("G"),
+    genh = gensymf("H");
+geng() // "G1"
+genh() // "H1"
+geng() // "G2"
+genh() // "H2"
+```
+
+```
+function gensymff(unary, seed) {
+    // If we moved the declaration of the variable number here, we would generate "G1", "H2", "G3", "H4", ..., thus making it visible to every generator. 
+    return function (seed) {
+        var number = seed;
+        return function () {
+            number = unary(number);
+            return prefix + number;
+        };
+    };
+}
+```
+
+### Problem 22
+Make a function `fibonaccif` that returns a generator that will retrun the next fibonacci number.
+
+```
+var fib = fibonaccif(0, 1);
+fib() // 0
+fib() // 1
+fib() // 1
+fib() // 2
+fib() // 3
+fib() // 5
+```
+
+```
+function fibonaccif(a, b) {
+    var i = 0;
+    return function () {
+        var next;
+        switch (i) {
+        case 0:
+            i = 1;
+            return a;
+        case 1:
+            i = 2;
+            return b;
+        default:
+            next = a + b;
+            a = b;
+            b = next;
+            return next;
+        }
+    };
+}
+
+function fibonaccif(a, b) {
+    return function () {
+        var next = a;
+        a = b;
+        b += next;
+        return next;
+    };
+}
+
+function fibonaccif(a, b) {
+    return concat(
+            concat(
+                limit(identityf(a), 1)
+                limit(identityf(b), 1)
+            ), function fibonacci() {
+                    var next = a + b;
+                    a = b;
+                    b = next;
+                    return next;
+                }
+            );
+}
+
+function fibonaccif(a, b) {
+    return concat(
+        element([a, b]),
+        function fibonaccif(a, b) {
+            var next = a + b;
+            a = b;
+            b = next;
+            return next;
+        }
+    );
+}
+```
+
+### Problem 22
+Write a `counter` function that returns an object containing two functions that implement an up/down counter, hiding the counter.
+
+```
+var object = counter(10),
+    up = object.up,
+    down = object.down;
+up() // 11
+down() // 10
+down() // 9
+up() // 10
+```
+
+```
+function counter(value) {
+    return {
+        up: function () {
+            value += 1;
+            return value;
+        },
+        down: function () {
+            value -= 1;
+            return value;
+        }
+    };
+}
+```
+
+### Problem 23
+Make a `revocable` function that takes a binary function and returns an object containing an `invoke` function that can invoke the binary binary function and a `revoke` function that disables the `invoke` function.
+
+```
+var rev = revocable(add),
+    add_rev = rev.invoke;
+add_rev(3, 4); // 7
+rev.revoke();
+add_rev(5, 7); // undefined
+```
+
+```
+function revocable(binary) {
+    return {
+        invoke: function (first, second) {
+            if (binary !== undefined) {
+                return binary(first, second);
+            }
+        },
+        revoke: function () {
+            binary = undefined;
+        }
+    };
+}
+```
+
+### Problem 24
+Write a function `m` that takes a value and an optional source string and returns them in an object.
+
+```
+JSON.stringify(m(1)) // {"value": 1, "source": "1"}
+JSON.stringify(m(Math.PI, "pi")) // {"value": 3,14159, "source": "pi"}
+```
+
+```
+function m(value, source) {
+    return {
+        value: value,
+        source: (typeof source === 'string')
+            ? source
+            : String(value)
+    };
+}
+```
+
+### Problem 25
+Write a function `addm` that takes two `m` objects and return an `m` object.
+
+```
+JSON.stringify(addm(m(3), m(4))) // {"value": 7, "source": "(3+4)"}
+JSON.stringify(addm(m(1), m(Math.PI, "pi"))) // {"value": 4.13159, "source": "(1+pi)"}
+```
+
+```
+function addm(a, b) {
+    return m(
+        a.value + b.value,
+        "(" + a.source + "+" + b.source + ")"
+    );
+}
+```
+
+### Problem 26
+Write a function `liftm` that takes a binary function and a string and returns a function that acts on m objects.
+
+```
+var addm = liftm(add, "+");
+JSON.stringify(addm(m(3), m(4))) // {"value": 7, "source": "(3+4)"}
+JSON.stringify(liftm(mul, "*")(m(3), m(4))) // {"value": 12, "source": "(3*4)"}
+```
+
+```
+// This is a monad
+function liftm(binary, op) {
+    return function (a, b) {
+        return m(
+            binary(a.value, b.value),
+            "(" + a.source + op + b.source + ")"
+        );
+    };
+}
+```
+
+### Problem 27
+Modify function `liftm` so that the functions it produces can accept arguments that are either numebers or m objects.
+
+```
+var addm = liftm(add, "+");
+JSON.stringify(addm(3, 4)) // {"value": 7, "source": "(3+4)"}
+```
+
+```
+
+```
+function liftm(binary, op) {
+    return function (a, b) {
+        if (typeof a === 'number') {
+            a = m(a);
+        }
+        if (typeof b === 'number') {
+            b = m(b);
+        }
+        return m(
+            binary(a.value, b.value),
+            "(" + a.source + op + b.source + ")"
+        );
+    };
+}
+```
+
+### Problem 28
+Write a function `exp` that evaluates simple array expressions.
+
+```
+var sae = [mul, 5, 11];
+exp(sae) // 55
+exp(42) // 42
+```
+
+```
+function exp(value) {
+    return (Array.isArray(value))
+        ? value[0](value[1], value[2])
+        : value;
+}
+```
+
+### Problem 29
+Modify `exp` to evaluate nested array expressions.
+
+```
+var nae = [
+    Math.sqrt,
+    [
+        add,
+        [square, 3],
+        [square, 4]
+    ]
+];
+exp(nae) // 5
+```
+
+```
+function exp(sae) {
+    return (Array.isArray(value))
+        ? value[0](exp(value[1]), exp(value[2]))
+        : value;
+}
+```
+
+### Problem 30
+Write a function `addg` that adds from many invocations that adds from many invocations, until it sees an empty invocation.
+
+```
+addg() // undefined
+addg(2)() // 2
+addg(2)(7)() // 9
+addg(3)(0)(4)() // 7
+addg(1)(2)(4)(8)() // 15
+```
+
+```
+// retursion: a function returns itself
+function addg(first) {
+    function more(next) {
+        if (next === undefined) {
+            return first;
+        }
+        first += next;
+        return more;
+    }
+    if (first !== undefined) {
+        return more;
+    }
+}
+```
+
+### Problem 31
+Write a function `liftg` that will take a binary funtion and apply it to many invocations.
+
+```
+liftg(mul)() // undefined
+liftg(mul)(3)() // 3
+liftg(mul)(3)(0)(4)() // 0
+liftg(mul)(1)(2)(4)(8)() // 64
+```
+
+```
+function liftg(binary) {
+    return function (first) {
+        if (first === undefined) {
+            return first;
+        }
+        return function more(next) {
+            if (next === undefined) {
+                return first;
+            }
+            first = binary(first, next);
+            return more;
+        };
+    };
+}
+```
+
+### Problem 32
+Write a function `arrayg` that will build an array from many invocations.
+
+```
+arrayg() // []
+arrayg(3)() // [3]
+arrayg(3)(4)(5)() // [3, 4, 5]
+```
+
+```
+function arrayg(first) {
+    var array = [];
+    function more(next) {
+        if (next === undefined) {
+            return array;
+        }
+        array.push(next);
+        return more;
+    }
+    return more(first);
+}
+
+// Using liftg
+function arrayg(first) {
+    if (first === undefined) {
+        return [];
+    }
+    return liftg(
+        function (array, value) {
+            array.push(value);
+            return array;
+        }
+    )([first]);
+}
+```
+
+### Problem 33
+Make a function `continuize` that takes a unary function and returns a function that takes a callback and an argument.
+
+```
+sqrtc = continuize(Math.sqrt);
+sqrtc(alert, 81) // 9
+```
+
+```
+function continuize(unary) {
+    return function (callback, arg) {
+        return callback(unary(arg));
+    }
+}
+
+// ES6 version
+function continuize(any) {
+    return function (callback, ...x) {
+        return callback(any(...x));
+    }
+}
+
+```
+
+### Problem 34
+Make an array `wrapper` object with methods `get`, `store` and `append`, such that an attacker cannot get access to the private array.
+
+```
+myvector = vector();
+myvector.append(7);
+myvector.store(1, 8);
+myvector.get(0) // 7
+myvector.get(1) // 8
+```
+
+```
+function vector() {
+    var array = [];
+
+    return {
+        get: function get(i) {
+            return array[i];
+        },
+        store: function store(i, v) {
+            array[i] = v;
+        },
+        append: function append(v) {
+            array.push(v);
+        }
+    };
+}
+
+// A security flaw would let an attacker gain access to "array" with the code below.
+var stash;
+myvector.store('push', function () {
+    stash = this;
+})'
+myvector.append(); // stash is array.
+
+// The code below fixes the security issue described above.
+function vector() {
+    var array = [];
+
+    return {
+        get: function get(i) {
+            return array[+i];
+        },
+        store: function store(i, v) {
+            // Force i to be a number or NaN.
+            array[+i] = v;
+        },
+        append: function append(v) {
+            // Alternatively, don't use push.
+            array[array.length] = v;
+        }
+    };
+}
+```
+
+### Problem 35
+Make a function that makes a publish/subscribe object. It will reliably deliver all publications to all subscribers in the right order.
+
+```
+my_pubsub = pubsub();
+my_pubsub.subscribe(log);
+my_pubsub.publish("It works!"); // log("It works!")
+```
+
+```
+function pubsub() {
+    var subscribers = [];
+    return {
+        subscribe: function (subscriber) {
+            subscribers.push(subscriber);
+        },
+        publish: function (publication) {
+            var i, length = subscribers.length;
+            for (i = 0; i < length; i += 1) {
+                subscribers[i](publication);
+            }
+        }
+    };
+}
+
+// The code above has several security flaws:
+// 1. Prevent subscribers from receiving messages.
+// The attack is to call my_pubsub.subscribe(), this will generate an exception during when publish is called. The fix is to wrap the call to subscribers[i] in a try/catch.
+// An alternative attack, is to set my_pubsub.publish = undefined. The solution is to freeze the object.
+// Another attack is to use my_pubsub.subscribe(function () { this.length = 0; }). subscribers[i](publication) is a method call on the subscribers array itself so "this" in our function is the actual array. The fix is to assign subscribers[i] to a local variable, use Function.apply/Function.call or use forEach instead.
+// 2. Allow the notification of subscribers out of order.
+// Using my_pubsub.subscribe(limit(function () { my_pubsub.publish("Out of order"); }, 1)), this way as our method calls the publish function itself subscribers get notified out of order. One way to fix it is to disable the publish method while we are notifying subscribers. Alternatively we can use an asynchronous solution by using setTimeout. An attacker, could always cancel the setTimeout by guessing the number returned by setTimeout.
+
+// The following code fixes the security issues described above.
+function pubsub() {
+    var subscribers = [];
+    return Object.freeze({
+        subscribe: function (subscriber) {
+            subscribers.push(subscriber);
+        },
+        publish: function (publication) {
+            var i, length = subscribers.length;
+            subscribers.forEach(function (s) {
+                setTimeout(function () {
+                    s(publication);
+                }, 0);
+            });
+        }
+    });
+}
+```

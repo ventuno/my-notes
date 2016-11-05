@@ -1495,3 +1495,226 @@ function pubsub() {
     });
 }
 ```
+
+## Managing Asynchronicity
+
+### RQ
+A JavaScript library for managing asynchronicity in server applications.
+
+#### `RQ.sequence(requestors)`
+Takes an array of requestor functions, calls them one at a time, passing the result of the previous requestor to the next requestor.
+
+```
+getNav = RQ.sequence([
+    read_file(filename),
+    getPreference,
+    getCustomNav
+]);
+```
+
+#### `RQ.parallel(requestors)`
+Takes an array of requestor functions, calls them all at once and gives an array of results.
+
+```
+getStuff = RQ.parallel([
+    getNav,
+    getAds,
+    getMessageOfTheDay
+]);
+```
+
+Also, takes an optional array of optional requestors. Their results will be included if they can be obtained before the required requestors finish.
+
+```
+getStuff = RQ.parallel([
+    getNav,
+    getAds,
+    getMessageOfTheDay
+], [
+    getHoroscope,
+    getGossip
+]);
+```
+
+#### `RQ.race(requestors)`
+Takes an array of requestors, calls them all at once and gives the result of the first success.
+
+```
+getAds = RQ.race([
+    getAd(adnet.klikHaus),
+    getAd(adnet.inUFace),
+    getAd(adnet.trackPipe)
+]);
+```
+
+#### `RQ.fallback(requestors)
+Takes an array of requestors and gives the result of the first success.
+
+```
+getWeather = RQ.fallback([
+    fetch("weather", localCache),
+    fetch("weather", localDB),
+    fetch("weather", remoteDB)
+]);
+```
+
+RQ | All at once | One at a time
+---|-------------|--------------
+All | `parallel` | `sequence`
+One | `race` | `fallback`
+
+Every RQ API takes a timeout. The requests are failed if they do not complete in the given time in milliseconds. Requests can be canceled, but their cancellation is not guaranteed.
+
+#### RQ Types
+
+* `requestor`: A function that can execute a request.
+
+```
+requestor(
+    callback(success, failure),
+    value
+) -> cancel(reason)
+```
+
+A requestor takes a callback and can take a value which is the result of a previous requestor. It can return a cancel function.
+
+* `callback`: A continuation function that will be passed to a requestor.
+
+```
+callback (success, failure)
+```
+
+Takes two functions: one to handle the successful case and another one to handle failures.
+
+* `factory`: A function that takes arguments and returns a requestor function.
+
+
+```
+factory(arguments...) ->
+    requestor(
+        callback(success, failure),
+        value
+    ) -> cancel(reason)
+```
+
+Factories generate requestors.
+
+* `cancel`: A function returned by a requestor that may be used to cancel a request.
+
+## The Better Parts
+
+### New Good Parts in ES6
+
+* Proper tail calls: `return func();`.
+* Ellipsis operator
+
+```
+function curry(func, ...first) {
+   return function (...second) {
+        return func(...first, ...second);
+    }; 
+}
+
+function curry(func) {
+    var slice = Array.prototype.slice, args = slice.call(arguments, 1);
+    return function () {
+        return func.apply(null, args.concat(slice.call(arguments, 0)));
+    };
+}
+```
+
+* Modules.
+* `let` and `const`
+
+Beware of the difference between `const` and `freeze`. You could declare an object as `const` but still mutate its properties. `const` is for variables, `freeze` is for values.
+```
+const fax;
+fax = faz; // bad
+fax.fay = faz; // ok
+```
+
+* Destructuring
+
+```
+let {that, other} = some_object;
+// is equivalent to:
+let that = some_object.that, other = some_object.other;
+```
+
+* WeakMap: any JavaScript value and use it as a key (e.g.: values are not automatically converted to strings anymore). If an object exists only as the key of a property in a WeakMap, it will be garbage collected automatically.
+* Megastring literal: strings can be organized in multiple lines using the \` operator.
+* Fat arrow functions
+
+```
+// This will not return an object literal as expected, but will return undefined.
+(name) => {id: name}
+```
+
+### Bad Parts in ES6
+
+* `class`: it is just syntactic sugar on top of the prototypal model. It is not going to work the way people might expect, also keeps the developer trapped in the mindset of the classical model, making it impossible to learn the functional model.
+
+### Good Parts Reconsidered
+
+* I stopped using `new` years ago. Use `Object.create` instead. In the end, if we stop using `this`, we do not even need `Object.create` anymore.
+* I stopped using `null`.
+* I stopped using falsiness. Comparisons need to be as explicit as possible.
+* I do not use `for`. Use `array.forEach`.
+* I do not use `for in`. It never worked right because it goes up the prototype chain. Use `Object.keys(object).forEach`.
+* Once ES6 will have proper tail calls, I will stop using `while`
+
+```
+// With proper tail recursion, both functions run at the same speed and consume the same amount of memory.
+function repeat(func) {
+    while (func() !== undefined) {
+    }
+}
+
+function repeat(func) {
+    if (func() !== undefined) {
+        return repeat(func);
+    }
+}
+```
+
+### Evolution of Inheritance
+
+#### Systems Languages vs Application Languages
+System languages are used to write low level programs like kernels, memory managers, .... All the rest, is written using application languages.
+
+#### Classical Inheritance vs  Prototypal Inheritance
+Classical inheritance has the problem is classification taxonomy described above. Extension in classical inheritance creates coupling. Protoypal systems eliminate the coupling introduced by extension.
+
+##### Prototypal Inheritance
+
+* Memory conservation is one of the advantages, but it makes less sense nowadays. It introduces the confusion between own and inherited properties.
+* Retroactive heredity: we can change what an object inherits after it is constructed. This might inhibit performances.
+
+##### Class Free Object Oriented Programming
+Is the programming model that we create with JavaScript.
+
+* Block Scope.
+* Function Scope.
+* Closure.
+* When a function returns another function, the inner survives the outer.
+
+Recommended model for doing class free object oriented programming using functions in JavaScript.
+
+```
+// The constructor takes a specification object.
+function constructor(spec) {
+    let
+        // Instance variables can be initialized from the specification object.
+        {member} = spec,
+        // Other methods we get from other constructors. Idea: we can have as many "other_constructor" as we want.
+        {other} = other_constructor(spec),
+        method = function () {
+            // can access: member, other, method, spec
+        };
+    // Public method go into the returned object. We obtain a hard incorruptible interface.
+    return Object.freeze({
+        method,
+        other
+    });
+}
+```

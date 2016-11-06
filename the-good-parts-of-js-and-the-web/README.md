@@ -1,18 +1,194 @@
-# My Notes On "The Good Parts of JavaScript and the Web"
+# My Notes On [D. Crockford](http://www.crockford.com/)'s "[The Good Parts of JavaScript and the Web](https://frontendmasters.com/courses/good-parts-javascript-web/)"
 
 ## Programming Style and Your Brain
 
 ### Two Systems
+D. Kahneman (Thinking, Fast and Slow) has a metaphor for human thought based on the interaction of two systems:
 
-### Visual Processing
+* System 2 (Head): analytic, algorithmic, logical. It is sophisticated but slow. We use computers to help us with the tasks system 2 is too slow to solve.
+* System 1 (Gut): intuitive, heuristic, associative. It is very fast and cannot be "turned off".
+
+Kahneman describes the connection between these two systems. System 2 gets its working set from System 1 without being aware of it. As System 1 is approximate, it can give wrong assumptions to System 2.
+
+Computer programs are the most complicated things people make. The complexity of writing computer programs is due to the fact that programs need to be perfect to work correctly.
+
+We write computer programs based on the two systems. There is not fixed set of instructions that we can follow in order to write a program. Solving a problem with programming is often about intuition, there is a lot of confusion about what is the best approach.
+
+Most of the time we solve a problem with an incomplete knowledge of what the solution is going to be. The solution is to guess, which is hard for System 2, but very natural for System 1.
 
 ### JavaScript: Good Parts & Bad Parts
 
+There are many good and bad parts to JavaScript. [JSLint](http://www.jslint.com/) is a tool that defines a professional subset of JavaScript, warning a programmer when he uses some of the bad parts.
+
+The argument on aligning curly brackets to the left or the right does not have an answer. In JavaScript, brackets should always be on the right:
+
+```
+return
+{
+    ok: false
+};
+// Silent error: the function returns undefined because the compiler automatically adds a semicolon after the return statement.
+
+return {
+    ok: true
+};
+// Works as expected: returns the object.
+```
+
+The code:
+
+```
+return
+{
+    ok: false
+};
+```
+
+is translated at compile time to:
+
+```
+return; // automatic semicolon insertion.
+// unreachable statement
+{ // beginning of a block
+    ok: false; // "ok" is a label. JavaScript sytax allows statements to have labels. "false" is an empty expression.
+}; // end of block and empty expression.
+```
+
 ### Programming Style
+A good style can help produce better programs. Style should not be about personal preference and self-expression. Good programming style is about preferring forms that are error resistant. Good use of style can help reduce the occurrence of errors.
+
+Programs must communicate clearly to people, through good style.
 
 ### Composition
+Use elements of good composition where applicable.
+
+* Use a space after a comma, not before. Unless we have evidence of the opposite.
+* Use spaces to disambiguate parenthesis.
+  - No space between a function name and `(`.
+  - One space between all other names and `(`.
+```
+// Wrong:
+foo (bar);
+return(a+b);
+if(a=== 0) {...}
+function foo (b) {...}
+function(x) {...}
+```
+* Neatness counts.
+```
+// Wrap an Immediately Invocable Function expression.
+(function () {
+    ...
+}());
+```
+* Never rely on automatic semicolon insertion.
+```
+// As the semicolon is missing, the compile is not going to assume that we are assigning y to x. Instead, it is going to assume that we are calling the function "y" and assigning its result to x.
+x = y
+(function () {
+    ...
+}());
+```
+* Do not use the `with` statement. It is confusing.
+```
+// The following code can be interpreted as:
+// o.foo = koda;
+// o.foo = o.koda;
+// foo = koda;
+// foo = o.koda;
+with (o) {
+    foo = koda;
+}
+```
+* Always use `===`, never `==`.
+```
+0 == '' // true
+0 == '0' // true
+'' == '0' // false
+false == 'false' // false
+false == '0' // true
+" \t\r\n " == 0 // true
+```
+* If there's a feature of a language that is sometimes problematic and if it can be replaced with another feature that is more reliable, then always use the more reliable feature.
+* Avoid forms that are difficult to distinguish from common errors.
+```
+// Do not use multiline string literals, they break indentation and generate a syntax error if we have a space after the `\`
+var long_line_1 = "This is a \
+long line"; // ok
+// There is a space after the "\".
+var long_line_2 = "This is a \ 
+long line"; // syntax error
+```
+* Make your programs look like what they do.
+```
+// In JavaScript we can have assignments inside a condition.
+if (a = b) {...}
+
+// It appears to be doing
+if (a === b) {...}
+// It really does
+a = b;
+if (a) {...}
+```
+* Write in a way that clearly communicates your intent.
+```
+if (a) b(); c();
+// Looks like
+if (a) {b(); c();}
+// But it really does
+if (a) {b();} c();
+```
+* As our processes become more agile, our coding must be more resilient.
 
 ### Scope
+In JavaScript, we do not have block scope, only function scope.
+
+#### The `var` statement
+The `var` statement gets split in two parts:
+
+* The declaration part gets hoisted to the top of the function, initializing with `undefined`.
+* The initialization part turns into an ordinary assignment.
+```
+// For example
+function foo() {
+    ...
+    var myVar = 0, myOtherVar;
+}
+// Expands into
+function foo() {
+    var myVar = undefined,
+        myOtherVar = undefined;
+    ...
+    myVar = 0;
+}
+
+var a = b = 0;
+
+// Looks like
+var a = 0, b = 0;
+// Really does
+// b = 0; // b is a global variable
+var a = b;
+```
+
+Based on this strange behavior of the `var` statement:
+
+* Declare all variables at the top of the function.
+* Declare all functions before you call them.
+
+In a `for` statement, the variable `i` is not scoped to the loop.  In ES6, the `let` statement will respect block scope.
+
+#### Global variables
+
+* Global variables are evil.
+* Avoid global variables.
+* When using global variables, be explicit: use `UPPER_CASE`.
+* Global variables should be as rare as hens teeth and stick out like a sore thumb.
+
+#### `new` prefix
+Forgetting a `new` causes a constructor to clobber global variables without warning (fixed in ES5/strict). Instead of creating a new object it will clobber global variables that happen to have the same name as the instance variables you are trying to initialize.
+
+Constructor functions should be named with `InitialCaps`.
 
 ### Bad Style
 

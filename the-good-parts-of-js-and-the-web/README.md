@@ -162,8 +162,8 @@ function foo() {
     myVar = 0;
 }
 
+// The statement
 var a = b = 0;
-
 // Looks like
 var a = 0, b = 0;
 // Really does
